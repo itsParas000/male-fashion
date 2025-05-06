@@ -1,0 +1,671 @@
+<?php
+session_name('SESSION_USER');
+session_start();
+include 'php/config.php';
+
+if (!isset($_SESSION['valid'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
+
+// Base SQL query for products
+$sql = "SELECT id, name, price, old_price, description, image, stock_quantity, is_active, category_name 
+        FROM products 
+        WHERE is_active = 1";
+$count_sql = "SELECT COUNT(*) as total FROM products WHERE is_active = 1";
+$where_conditions = [];
+$params = [];
+$types = "";
+
+// Brand filter (using name as proxy since no brand field exists)
+$brands = isset($_GET['brands']) ? $_GET['brands'] : [];
+if (!empty($brands)) {
+    $placeholders = implode(',', array_fill(0, count($brands), '?'));
+    $where_conditions[] = "name IN ($placeholders)";
+    $params = array_merge($params, $brands);
+    $types .= str_repeat('s', count($brands));
+}
+
+// Category filter
+$categories = isset($_GET['categories']) ? $_GET['categories'] : [];
+if (!empty($categories)) {
+    $placeholders = implode(',', array_fill(0, count($categories), '?'));
+    $where_conditions[] = "category_name IN ($placeholders)";
+    $params = array_merge($params, $categories);
+    $types .= str_repeat('s', count($categories));
+}
+
+// Price filter - Increased max default to 10000
+$min_price = isset($_GET['min_price']) ? floatval($_GET['min_price']) : 10;
+$max_price = isset($_GET['max_price']) ? floatval($_GET['max_price']) : 10000;
+$where_conditions[] = "price BETWEEN ? AND ?";
+$params[] = $min_price;
+$params[] = $max_price;
+$types .= "dd";
+
+// Add WHERE conditions to queries
+if (!empty($where_conditions)) {
+    $sql .= " AND " . implode(" AND ", $where_conditions);
+    $count_sql .= " AND " . implode(" AND ", $where_conditions);
+}
+
+// Sorting
+$sort = isset($_GET['sort']) ? $_GET['sort'] : 'default';
+switch ($sort) {
+    case 'price_asc':
+        $sql .= " ORDER BY price ASC";
+        break;
+    case 'price_desc':
+        $sql .= " ORDER BY price DESC";
+        break;
+    case 'name_asc':
+        $sql .= " ORDER BY name ASC";
+        break;
+    default:
+        $sql .= " ORDER BY created_at DESC";
+}
+
+// Pagination
+$items_per_page = 9;
+$page = isset($_GET['page']) ? max(1, intval($_GET['page'])) : 1;
+$offset = ($page - 1) * $items_per_page;
+
+// Count total items
+$count_stmt = $con->prepare($count_sql);
+if (!empty($params)) {
+    $count_stmt->bind_param($types, ...$params);
+}
+$count_stmt->execute();
+$count_result = $count_stmt->get_result();
+$total_items = $count_result->fetch_assoc()['total'];
+$total_pages = ceil($total_items / $items_per_page);
+
+// Add limit to main query
+$sql .= " LIMIT ?, ?";
+$params[] = $offset;
+$params[] = $items_per_page;
+$types .= "ii";
+
+// Execute main query
+$stmt = $con->prepare($sql);
+if (!empty($params)) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+
+// Get user's wishlist items
+$wishlist_sql = "SELECT product_id FROM wishlist WHERE user_id = ?";
+$wishlist_stmt = $con->prepare($wishlist_sql);
+$wishlist_stmt->bind_param("i", $user_id);
+$wishlist_stmt->execute();
+$wishlist_result = $wishlist_stmt->get_result();
+$wishlist_items = [];
+while ($row = $wishlist_result->fetch_assoc()) {
+    $wishlist_items[] = $row['product_id'];
+}
+
+// Fetch all distinct categories
+$cat_sql = "SELECT category_name, COUNT(*) as product_count 
+            FROM products 
+            WHERE category_name IS NOT NULL 
+            GROUP BY category_name";
+$cat_result = $con->query($cat_sql);
+$all_categories = [];
+while ($cat_row = $cat_result->fetch_assoc()) {
+    $all_categories[] = $cat_row;
+}
+
+// Fetch distinct brands (using name as a proxy for brand)
+$brand_sql = "SELECT DISTINCT name FROM products WHERE is_active = 1 LIMIT 4";
+$brand_result = $con->query($brand_sql);
+$all_brands = [];
+while ($brand_row = $brand_result->fetch_assoc()) {
+    $all_brands[] = $brand_row['name'];
+}
+
+// Define sizes, colors, and tags statically (you can make these dynamic if needed)
+$sizes = ['xs', 's', 'm', 'xl', '2xl', 'xxl', '3xl', '4xl'];
+$colors = ['c-1', 'c-2', 'c-3', 'c-4', 'c-5', 'c-6', 'c-7', 'c-8', 'c-9'];
+$tags = ['Product', 'Bags', 'Shoes', 'Fashion', 'Clothing', 'Hats', 'Accessories'];
+?>
+
+<!DOCTYPE html>
+<html lang="zxx">
+<head>
+    <meta charset="UTF-8">
+    <meta name="description" content="Male_Fashion Template">
+    <meta name="keywords" content="Male_Fashion, unica, creative, html">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Shop | Male-Fashion</title>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- CSS Styles -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" integrity="sha256-eZrrJcwDc/3uDhsdt61sL2oOBY362qM3lon1gyExkL0=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/elegant-icons@0.1.0/style.css" integrity="sha256-IcKRxYb84chZGPZEVYH38X5kPinewF6z3kQ2wUHw1/E=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/magnific-popup@1.1.0/dist/magnific-popup.css" integrity="sha256-WkKDNlHVfGSEe4e4bHe+HGkT3NRO8PhN9pTIKjQhD/s=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nice-select@1.1.0/css/nice-select.css" integrity="sha256-mLBIhmBvigTFWPSCtvdu6a76T+3Xyt+K571hupeFLg4=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/owl.carousel@2.3.4/dist/assets/owl.carousel.min.css" integrity="sha256-UhQQ4fxEeABh4JrcmAJ1+16id/1dnlOEVCFOxDef9Lw=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jquery.slicknav@1.0.8/dist/slicknav.min.css" integrity="sha256-zG7SvGJYL+DL4TmoRISLyQVSVxV6+WR4GjPQ+SwQSmc=" crossorigin="anonymous">
+    <link rel="stylesheet" href="style.css" type="text/css">
+
+    <!-- Additional styles for wishlist, labels, and sidebar -->
+    <style>
+        /* Sidebar Styling */
+        .shop__sidebar {
+            background-color: #f9fafb;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .shop__sidebar__search {
+            margin-bottom: 20px;
+        }
+
+        .shop__sidebar__search form {
+            display: flex;
+            align-items: center;
+        }
+
+        .shop__sidebar__search input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .shop__sidebar__search button {
+            padding: 10px;
+            background-color: #000;
+            color: #fff;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+        }
+
+        .shop__sidebar__accordion .card {
+            border: none;
+            margin-bottom: 15px;
+        }
+
+        .shop__sidebar__accordion .card-heading {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+            cursor: pointer;
+        }
+
+        .shop__sidebar__categories ul,
+        .shop__sidebar__brand ul,
+        .shop__sidebar__size,
+        .shop__sidebar__color,
+        .shop__sidebar__tags {
+            padding: 0;
+        }
+
+        .shop__sidebar__categories ul li,
+        .shop__sidebar__brand ul li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .shop__sidebar__categories ul li label,
+        .shop__sidebar__brand ul li label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .shop__sidebar__categories ul li input,
+        .shop__sidebar__brand ul li input {
+            margin-right: 8px;
+        }
+
+        .shop__sidebar__size label,
+        .shop__sidebar__color label {
+            margin-right: 10px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .shop__sidebar__tags a {
+            display: inline-block;
+            background-color: #e5e7eb;
+            color: #374151;
+            padding: 5px 10px;
+            margin: 5px 5px 0 0;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .shop__sidebar__tags a:hover {
+            background-color: #d1d5db;
+        }
+
+        .filter-button {
+            background-color: #000;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            width: 100%;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .filter-button:hover {
+            background-color: #333;
+        }
+
+        /* Heart Icon Styling */
+        .wishlist-btn {
+            font-size: 20px;
+            color: #ccc;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .wishlist-btn.filled {
+            color: #ff0000; /* Filled heart color */
+        }
+
+        /* Action Message Styling */
+        .action-message {
+            display: none;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        /* Product Grid Styling */
+        .product__item {
+            margin-bottom: 30px;
+        }
+
+        .product__item__pic {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product__item__pic .label {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 3px;
+        }
+
+        .product__hover {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            list-style: none;
+        }
+
+        .product__item__text {
+            text-align: center;
+            padding-top: 15px;
+        }
+
+        .product__item__text h6 {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .product__item__text h5 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #111;
+        }
+
+        .rating i {
+            color: #facc15;
+        }
+    </style>
+</head>
+<body>
+<?php include "header.php"?>    
+
+    <!-- Breadcrumb Section -->
+    <section class="breadcrumb-option">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div class="breadcrumb__text">
+                        <h4>Shop</h4>
+                        <div class="breadcrumb__links">
+                            <a href="./index.php">Home</a>
+                            <span>Shop</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Shop Section -->
+    <section class="shop spad">
+        <div class="container">
+            <div class="row">
+                <!-- Sidebar -->
+                <div class="col-lg-3">
+                    <div class="shop__sidebar">
+                        <div class="shop__sidebar__search">
+                            <form action="#">
+                                <input type="text" placeholder="Search...">
+                                <button type="submit"><span class="icon_search"></span></button>
+                            </form>
+                        </div>
+                        <div class="shop__sidebar__accordion">
+                            <form method="GET" action="">
+                                <div class="accordion" id="accordionExample">
+                                    <div class="card">
+                                        <div class="card-heading">
+                                            <a data-toggle="collapse" data-target="#collapseOne">Categories</a>
+                                        </div>
+                                        <div id="collapseOne" class="collapse show" data-parent="#accordionExample">
+                                            <div class="card-body">
+                                                <div class="shop__sidebar__categories">
+                                                    <ul class="nice-scroll">
+                                                        <?php
+                                                        foreach ($all_categories as $category) {
+                                                            $category_name = htmlspecialchars($category['category_name']);
+                                                            $checked = in_array($category_name, $categories) ? 'checked' : '';
+                                                            echo "<li class='flex justify-between'><label><input class='mr-2' type='checkbox' name='categories[]' value='$category_name' $checked>$category_name</label> <span>{$category['product_count']}</span></li>";
+                                                        }
+                                                        ?>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-heading">
+                                            <a data-toggle="collapse" data-target="#collapseTwo">Branding</a>
+                                        </div>
+                                        <div id="collapseTwo" class="collapse show" data-parent="#accordionExample">
+                                            <div class="card-body">
+                                                <div class="shop__sidebar__brand">
+                                                    <ul>
+                                                        <?php
+                                                        foreach ($all_brands as $brand) {
+                                                            $brand_name = htmlspecialchars($brand);
+                                                            $checked = in_array($brand_name, $brands) ? 'checked' : '';
+                                                            echo "<li><label><input type='checkbox' name='brands[]' value='$brand_name' $checked> $brand_name</label></li>";
+                                                        }
+                                                        ?>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-heading">
+                                            <a data-toggle="collapse" data-target="#collapseThree">Filter Price</a>
+                                        </div>
+                                        <div id="collapseThree" class="collapse show" data-parent="#accordionExample">
+                                            <div class="card-body">
+                                                <div class="shop__sidebar__price">
+                                                    <input class="w-full mb-2" type="range" min="10" max="10000" value="<?php echo $max_price; ?>" name="max_price" oninput="this.nextElementSibling.children[1].textContent = '₹' + this.value">
+                                                    <div class="flex justify-between text-sm text-gray-500">
+                                                        <span>Price ₹299</span>
+                                                        <span>₹<?php echo $max_price; ?></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-heading">
+                                            <a data-toggle="collapse" data-target="#collapseFour">Size</a>
+                                        </div>
+                                        <div id="collapseFour" class="collapse show" data-parent="#accordionExample">
+                                            <div class="card-body">
+                                                <div class="shop__sidebar__size">
+                                                    <?php
+                                                    foreach ($sizes as $size) {
+                                                        echo "<label for='$size'>$size<input type='radio' id='$size' name='size'></label>";
+                                                    }
+                                                    ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-heading">
+                                            <a data-toggle="collapse" data-target="#collapseFive">Colors</a>
+                                        </div>
+                                        <div id="collapseFive" class="collapse show" data-parent="#accordionExample">
+                                            <div class="card-body">
+                                                <div class="shop__sidebar__color">
+                                                    <?php
+                                                    foreach ($colors as $color) {
+                                                        echo "<label class='$color' for='sp-$color'><input type='radio' id='sp-$color' name='color'></label>";
+                                                    }
+                                                    ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card">
+                                        <div class="card-heading">
+                                            <a data-toggle="collapse" data-target="#collapseSix">Tags</a>
+                                        </div>
+                                        <div id="collapseSix" class="collapse show" data-parent="#accordionExample">
+                                            <div class="card-body">
+                                                <div class="shop__sidebar__tags">
+                                                    <?php
+                                                    foreach ($tags as $tag) {
+                                                        echo "<a href='#'>$tag</a>";
+                                                    }
+                                                    ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="filter-button mt-4">Filter</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Grid -->
+                <div class="col-lg-9">
+                    <div class="shop__product__option">
+                        <div class="row">
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <div class="shop__product__option__left">
+                                    <p>Showing <?php echo min($offset + 1, $total_items); ?>–<?php echo min($offset + $items_per_page, $total_items); ?> of <?php echo $total_items; ?> results</p>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 col-md-6 col-sm-6">
+                                <div class="shop__product__option__right">
+                                    <p>Sort by:</p>
+                                    <select name="sort" onchange="this.form.submit()" form="filterForm">
+                                        <option value="default" <?php echo $sort == 'default' ? 'selected' : ''; ?>>Default</option>
+                                        <option value="price_asc" <?php echo $sort == 'price_asc' ? 'selected' : ''; ?>>Low To High</option>
+                                        <option value="price_desc" <?php echo $sort == 'price_desc' ? 'selected' : ''; ?>>High To Low</option>
+                                        <option value="name_asc" <?php echo $sort == 'name_asc' ? 'selected' : ''; ?>>Name A-Z</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="action-message" class="action-message"></div>
+                    <div class="row">
+                        <?php while ($row = $result->fetch_assoc()): ?>
+                            <div class="col-lg-4 col-md-6 col-sm-6">
+                                <div class="product__item">
+                                    <div class="product__item__pic set-bg" data-setbg="assets/<?php echo htmlspecialchars($row['image']); ?>" style="background-image: url('assets/<?php echo htmlspecialchars($row['image']); ?>');">
+                                        <?php 
+                                        $old_price = floatval($row['old_price']);
+                                        $price = floatval($row['price']);
+                                        if (!isset($row['stock_quantity']) || $row['stock_quantity'] <= 0): ?>
+                                            <span class="label" style="background-color: #ff4444; color: #fff;">Out of Stock</span>
+                                        <?php elseif ($old_price > $price && $old_price > 0): ?>
+                                            <span class="label" style="background-color: #10b981; color: #fff;"><?php echo round((($old_price - $price) / $old_price) * 100); ?>% Off</span>
+                                        <?php elseif ($row['id'] % 2 == 0): ?>
+                                            <span class="label" style="background-color: #facc15; color: #fff;">Best Price</span>
+                                        <?php endif; ?>
+                                        <ul class="product__hover">
+                                            <li>
+                                                <a href="#">
+                                                    <i class="wishlist-btn far fa-heart <?php echo in_array($row['id'], $wishlist_items) ? 'fas filled' : ''; ?>" data-id="<?php echo $row['id']; ?>"></i>
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div class="product__item__text">
+                                        <h6><?php echo htmlspecialchars($row['name']); ?></h6>
+                                        <a href="product.php?id=<?php echo $row['id']; ?>" class="add-cart">+ Add To Cart</a>
+                                        <div class="rating">
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star"></i>
+                                            <i class="fa fa-star-half-o"></i>
+                                        </div>
+                                        <h5>₹<?php echo number_format($row['price'], 2); ?></h5>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endwhile; ?>
+                    </div>
+                    <!-- Pagination -->
+                    <div class="row">
+                        <div class="col-lg-12">
+                            <div class="product__pagination">
+                                <?php for ($i = 1; $i <= min(4, $total_pages); $i++): ?>
+                                    <?php 
+                                    $query_string = "?page=$i";
+                                    if (!empty($categories)) $query_string .= '&categories=' . implode(',', $categories);
+                                    if (!empty($brands)) $query_string .= '&brands=' . implode(',', $brands);
+                                    $query_string .= "&max_price=$max_price&sort=$sort";
+                                    ?>
+                                    <a href="<?php echo $query_string; ?>" <?php echo $page == $i ? 'class="active"' : ''; ?>><?php echo $i; ?></a>
+                                <?php endfor; ?>
+                                <?php if ($total_pages > 4): ?>
+                                    <span>...</span>
+                                    <a href="?page=<?php echo $total_pages; ?>&max_price=<?php echo $max_price; ?>&sort=<?php echo $sort; ?>"><?php echo $total_pages; ?></a>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <?php include 'footer.php'; ?>
+
+    <!-- Search Model -->
+    <div class="search-model">
+        <div class="h-100 d-flex align-items-center justify-content-center">
+            <div class="search-close-switch">+</div>
+            <form class="search-model-form">
+                <input type="text" id="search-input" placeholder="Search here.....">
+            </form>
+        </div>
+    </div>
+
+    <!-- Hidden Form for Filters -->
+    <form id="filterForm" method="GET" action="">
+        <input type="hidden" name="page" value="<?php echo $page; ?>">
+        <?php foreach ($brands as $brand): ?>
+            <input type="hidden" name="brands[]" value="<?php echo $brand; ?>">
+        <?php endforeach; ?>
+        <?php foreach ($categories as $category): ?>
+            <input type="hidden" name="categories[]" value="<?php echo $category; ?>">
+        <?php endforeach; ?>
+        <input type="hidden" name="max_price" value="<?php echo $max_price; ?>">
+    </form>
+
+    <!-- JS Plugins -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.nice-select@1.1.0/js/jquery.nice-select.min.js" integrity="sha256-Zr3vByTlMGQhvMfgkQ5BtWRSKBGa2QlspKYJnkjZTmo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.nicescroll@3.7.6/jquery.nicescroll.min.js" integrity="sha256-eyLxo2W5hVgeJ88zEqUsSGHzTuGUvJWUeuTmXg0Ne5I=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/magnific-popup@1.1.0/dist/jquery.magnific-popup.min.js" integrity="sha256-P93G0oq6PBPWTP1I0Y8+7DfWdN/pN3d7XgwQHe6OaUs=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.countdown@2.2.0/dist/jquery.countdown.min.js" integrity="sha256-IiR9fU+DX0zOH/0ZY4rJrT5hDDEkTDowSc5z5V5lwHc=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery.slicknav@1.0.8/dist/jquery.slicknav.min.js" integrity="sha256-mT2vKBwjvmz2zM5RPX+4AjrM4Xnsyku/U57i5o/TMPo=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mixitup@3.3.1/dist/mixitup.min.js" integrity="sha256-q4HLmF7zMEP2nKPVszwVUWZaTShZFr8jX691XTDrmzs=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/owl.carousel@2.3.4/dist/owl.carousel.min.js" integrity="sha256-pTxD+DSzIwmwhOqTFN+DB+nHjO4iAsbgfyFq5K5bcE0=" crossorigin="anonymous"></script>
+    <script src="main.js"></script>
+
+    <!-- Wishlist Functionality -->
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const wishlistButtons = document.querySelectorAll('.wishlist-btn');
+        const messageDiv = document.getElementById('action-message');
+
+        wishlistButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const productId = button.dataset.id;
+                const isFilled = button.classList.contains('filled');
+
+                if (isFilled) {
+                    messageDiv.textContent = "Already in wishlist! Remove from wishlist page.";
+                    messageDiv.className = 'action-message success';
+                    messageDiv.style.display = 'block';
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                    return;
+                }
+
+                const url = `wishlist.php?add=${productId}`;
+                try {
+                    const response = await fetch(url, { method: 'GET' });
+                    const data = await response.text();
+
+                    if (data.includes("added")) {
+                        button.classList.remove('far');
+                        button.classList.add('fas', 'filled');
+                        messageDiv.textContent = "Added to wishlist!";
+                        messageDiv.className = 'action-message success';
+                        messageDiv.style.display = 'block';
+                        setTimeout(() => messageDiv.style.display = 'none', 3000);
+                    } else if (data.includes("already")) {
+                        button.classList.remove('far');
+                        button.classList.add('fas', 'filled');
+                    } else {
+                        throw new Error("Unexpected response: " + data);
+                    }
+                } catch (err) {
+                    messageDiv.textContent = 'An error occurred';
+                    messageDiv.className = 'action-message error';
+                    messageDiv.style.display = 'block';
+                    console.error('Error:', err);
+                    setTimeout(() => messageDiv.style.display = 'none', 3000);
+                }
+            });
+        });
+    });
+    </script>
+</body>
+</html>
