@@ -1,0 +1,162 @@
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
+Delivery Boy: del, City: nerul
+Pending Query: SELECT o.*, u.Username as customer_name, o.shipping_address 
+                 FROM orders o 
+                 JOIN users u ON o.user_id = u.Id 
+                 WHERE o.status = 'Pending' 
+                 AND o.delivery_boy_id IS NULL 
+                 ORDER BY o.created_at DESC
+Rows (after city filter): 0
+Profile Picture Path: /images/default-user.png, Exists: No
