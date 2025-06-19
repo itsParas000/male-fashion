@@ -37,3 +37,11 @@ This is a demo e-commerce website created by integrating a backend (PHP & MySQL)
 ## 🔗 GitHub Repository
 
 [github.com/itsParas000/male-fashion](https://github.com/itsParas000/male-fashion)
+
+## User
+Username: new@gmail.com
+Password: New@12345
+
+## Admin
+Username: paras@123.com
+Password: Paras@123
